@@ -85,7 +85,10 @@ async def get_word(word_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/users/{user_id}/user_word_progress/")
-async def upsert_user_word_progress(usr_wrd_prog: UserWordProgressCreate, db: Session = Depends(get_db)):
+async def upsert_user_word_progress(user_id: int, usr_wrd_prog: UserWordProgressCreate, db: Session = Depends(get_db)):
+    if user_id != UserWordProgress.user_id:
+        raise HTTPException(status_code=400, detail="User ID mismatch")
+
     existing_progress = (
         db.query(UserWordProgress)
         .filter(
@@ -120,12 +123,18 @@ async def upsert_user_word_progress(usr_wrd_prog: UserWordProgressCreate, db: Se
     return {"message": "Progress created", "data": new_progress}
 
 @app.get("/users/{user_id}/user_word_progress/")
-async def read_user_word_progress(db: Session = Depends(get_db)):
-    user_word_progress = db.query(UserWordProgress).all()
+async def read_user_word_progress(user_id: int, db: Session = Depends(get_db)):
+    if user_id != UserWordProgress.user_id:
+        raise HTTPException(status_code=400, detail="User ID mismatch")
+
+    user_word_progress = db.query(UserWordProgress).filter(UserWordProgress.user_id == user_id).all()
     return user_word_progress
 
 @app.get("/users/{user_id}/user_word_progress/{word_id}")
 async def get_user_word_progress(user_id: int, word_id: int, db: Session = Depends(get_db)):
+    if user_id != UserWordProgress.user_id:
+        raise HTTPException(status_code=400, detail="User ID mismatch")
+
     return (
         db.query(UserWordProgress)
         .filter(
@@ -159,7 +168,9 @@ async def get_quiz(quiz_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/users/{user_id}/user_quizzes/")
-async def create_user_quiz(usr_quiz: UserQuizCreate, db: Session = Depends(get_db)):
+async def create_user_quiz(user_id: int, usr_quiz: UserQuizCreate, db: Session = Depends(get_db)):
+    if user_id != usr_quiz.user_id:
+        raise HTTPException(status_code=400, detail="User ID mismatch")
     new_usr_quiz = UserQuiz(
         user_id=usr_quiz.user_id,
         quiz_id=usr_quiz.quiz_id,
@@ -175,16 +186,20 @@ async def create_user_quiz(usr_quiz: UserQuizCreate, db: Session = Depends(get_d
     return {"message": "User quiz created", "data": new_usr_quiz}
 
 @app.get("/users/{user_id}/user_quizzes/")
-async def read_user_quiz(db: Session = Depends(get_db)):
-    user_quiz = db.query(UserQuiz).all()
+async def read_user_quiz(user_id: int, db: Session = Depends(get_db)):
+    user_quiz = db.query(UserQuiz).filter(UserQuiz.user_id == user_id).all()
     return user_quiz
 
-@app.get("/users/{user_id}/user_quizzes/{quiz_id}")
-async def read_user_quiz(usr_quiz_id: int, db: Session = Depends(get_db)):
-    return(
-        db.query(UserQuiz)
+@app.get("/users/{user_id}/user_quizzes/{user_quiz_id}")
+async def read_user_quiz(user_id: int, user_quiz_id: int, db: Session = Depends(get_db)):
+        result = (db.query(UserQuiz)
         .filter(
-            UserQuiz.id == usr_quiz_id,
+            UserQuiz.user_id == user_id,
+            UserQuiz.id == user_quiz_id,
         )
         .first()
-    )
+        )
+        if not result:
+            raise HTTPException(status_code=404, detail="User quiz not found")
+
+        return result
