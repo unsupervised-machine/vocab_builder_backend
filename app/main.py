@@ -2,6 +2,8 @@ import bcrypt
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import crud
+from fastapi.middleware.cors import CORSMiddleware
+
 
 import schemas
 from models import User, Word, UserWordProgress, Quiz, UserQuiz
@@ -15,6 +17,16 @@ def hash_password(password: str) -> str:
     return hashed_password.decode('utf-8')
 
 app = FastAPI()
+
+# Enable CORS for all origins (not recommended for production)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins (can be restricted based on requirement)
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["X-Custom-Header", "Content-Type"],
+)
+
 
 @app.get("/")
 async def root():
@@ -86,7 +98,7 @@ async def get_word(word_id: int, db: Session = Depends(get_db)):
 
 @app.post("/users/{user_id}/user_word_progress/")
 async def upsert_user_word_progress(user_id: int, usr_wrd_prog: UserWordProgressCreate, db: Session = Depends(get_db)):
-    if user_id != UserWordProgress.user_id:
+    if user_id != usr_wrd_prog.user_id:
         raise HTTPException(status_code=400, detail="User ID mismatch")
 
     existing_progress = (
@@ -124,17 +136,11 @@ async def upsert_user_word_progress(user_id: int, usr_wrd_prog: UserWordProgress
 
 @app.get("/users/{user_id}/user_word_progress/")
 async def read_user_word_progress(user_id: int, db: Session = Depends(get_db)):
-    if user_id != UserWordProgress.user_id:
-        raise HTTPException(status_code=400, detail="User ID mismatch")
-
     user_word_progress = db.query(UserWordProgress).filter(UserWordProgress.user_id == user_id).all()
     return user_word_progress
 
 @app.get("/users/{user_id}/user_word_progress/{word_id}")
 async def get_user_word_progress(user_id: int, word_id: int, db: Session = Depends(get_db)):
-    if user_id != UserWordProgress.user_id:
-        raise HTTPException(status_code=400, detail="User ID mismatch")
-
     return (
         db.query(UserWordProgress)
         .filter(
