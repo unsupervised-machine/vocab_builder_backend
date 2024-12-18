@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, create_engine, ForeignKey
+from sqlalchemy import Column, Integer, String, create_engine, ForeignKey, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 
 Base = declarative_base()
 
@@ -32,10 +32,10 @@ class UserWordProgress(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     word_id = Column(Integer, ForeignKey('words.id'), nullable=False)
 
-    status = Column(String) # not started, active, waiting, learned
-    review_count = Column(Integer) # number of times have reviewed word
-    review_spacing = Column(Integer) # duration to wait until move from waiting to active
-    review_last_date = Column(Integer) # date last time reviewed
+    status = Column(String, nullable=False)  # not started, active, waiting, learned
+    review_count = Column(Integer, default=0)  # number of times reviewed
+    review_spacing = Column(Integer, default=0)  # duration to wait (in days)
+    review_last_date = Column(DateTime, nullable=True)  # datetime of the last review
 
 
 
