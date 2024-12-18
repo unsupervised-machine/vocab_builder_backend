@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, create_engine, ForeignKey, DateTime, BLOB, JSON
+from sqlalchemy import Column, Integer, Float , String, create_engine, ForeignKey, DateTime, BLOB, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, validates
 
@@ -12,6 +12,7 @@ class User(Base):
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     password = Column(String)
+    points = Column(Integer)
 
 
 class Word(Base):
@@ -45,9 +46,9 @@ class Word(Base):
         from_attributes = True  # This tells Pydantic to treat SQLAlchemy models as dictionaries
 
 
-
 class UserWordProgress(Base):
     __tablename__ = 'user_word_progress'
+
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     word_id = Column(Integer, ForeignKey('words.id'), nullable=False)
@@ -56,6 +57,33 @@ class UserWordProgress(Base):
     review_count = Column(Integer, default=0)  # number of times reviewed
     review_spacing = Column(Integer, default=0)  # duration to wait (in days)
     review_last_date = Column(DateTime, nullable=True)  # datetime of the last review
+
+
+class Quiz(Base):
+    __tablename__ = 'quizzes'
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    # user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    word_list = Column(JSON, nullable=False)
+    # correct_words = Column(JSON, nullable=False)
+    # incorrect_words = Column(JSON, nullable=False)
+    # score_raw = Column(Integer, nullable=False)
+    # score_percent = Column(Float, nullable=False)
+    # quiz_date = Column(DateTime, nullable=True)
+    tags = Column(JSON, nullable=True)
+
+
+class UserQuiz(Base):
+    __tablename__ = 'user_quizzes'
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)  # Override id from Quiz
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    quiz_id = Column(Integer, ForeignKey('quizzes.id'), nullable=False)  # think of this as quiz template id
+    correct_words = Column(JSON, default=[])
+    incorrect_words = Column(JSON, default=[])
+    score_raw = Column(Integer, nullable=False)
+    score_percent = Column(Float, nullable=False)
+    quiz_date = Column(DateTime, nullable=True)
 
 
 

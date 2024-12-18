@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import crud
 
 import schemas
-from models import User, Word, UserWordProgress
+from models import User, Word, UserWordProgress, Quiz, UserQuiz
 from database import get_db
-from schemas import UserCreate, WordCreate, UserWordProgressCreate
+from schemas import UserCreate, WordCreate, UserWordProgressCreate, QuizCreate, UserQuizCreate
 
 
 def hash_password(password: str) -> str:
@@ -27,21 +27,18 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-
     hashed_password = hash_password(user.password)
 
-    db_user = User(name=user.name, email=user.email, password=hashed_password)
+    db_user = User(name=user.name, email=user.email, password=hashed_password, points=0)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
     return db_user
 
-
 @app.get("/users/")
 async def read_users(db: Session = Depends(get_db)):
     users = db.query(User).all()
     return users
-
 
 @app.get("/users/{user_id}")
 async def get_user(user_id: int, db: Session = Depends(get_db)):
@@ -122,8 +119,72 @@ async def upsert_user_word_progress(usr_wrd_prog: UserWordProgressCreate, db: Se
     db.refresh(new_progress)
     return {"message": "Progress created", "data": new_progress}
 
-
 @app.get("/user_word_progress/")
 async def read_user_word_progress(db: Session = Depends(get_db)):
     user_word_progress = db.query(UserWordProgress).all()
     return user_word_progress
+
+@app.get("/user_word_progress/{user_id}{word_id}")
+async def get_user_word_progress(user_id: int, word_id: int, db: Session = Depends(get_db)):
+    return (
+        db.query(UserWordProgress)
+        .filter(
+            UserWordProgress.user_id == user_id,
+            UserWordProgress.word_id == word_id
+        )
+        .first()
+    )
+
+
+@app.post("/quiz/")
+async def create_quiz_template(quiz_tmplt: QuizCreate, db: Session = Depends(get_db)):
+    db_quiz = Quiz(
+        word_list=quiz_tmplt.word_list,
+        tags=quiz_tmplt.tags,
+    )
+    db.add(db_quiz)
+    db.commit()
+    db.refresh(db_quiz)
+    return {"message": "Quiz template created", "data": db_quiz}
+
+@app.get("/quiz/")
+async def read_quiz(db: Session = Depends(get_db)):
+    quizzes = db.query(Quiz).all()
+    return quizzes
+
+@app.get("/quiz/{quiz_id}")
+async def get_quiz(quiz_id: int, db: Session = Depends(get_db)):
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    return quiz
+
+
+@app.post("/user_quiz/")
+async def create_user_quiz(usr_quiz: UserQuizCreate, db: Session = Depends(get_db)):
+    new_usr_quiz = UserQuiz(
+        user_id=usr_quiz.user_id,
+        quiz_id=usr_quiz.quiz_id,
+        correct_words=usr_quiz.correct_words,
+        incorrect_words=usr_quiz.incorrect_words,
+        score_raw=usr_quiz.score_raw,
+        score_percent=usr_quiz.score_percent,
+        quiz_date=usr_quiz.quiz_date,
+    )
+    db.add(new_usr_quiz)
+    db.commit()
+    db.refresh(new_usr_quiz)
+    return {"message": "User quiz created", "data": new_usr_quiz}
+
+@app.get("/user_quiz/")
+async def read_user_quiz(db: Session = Depends(get_db)):
+    user_quiz = db.query(UserQuiz).all()
+    return user_quiz
+
+@app.get("/user_quiz/{quiz_id}")
+async def read_user_quiz(usr_quiz_id: int, db: Session = Depends(get_db)):
+    return(
+        db.query(UserQuiz)
+        .filter(
+            UserQuiz.id == usr_quiz_id,
+        )
+        .first()
+    )
