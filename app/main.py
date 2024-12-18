@@ -54,7 +54,22 @@ async def create_word(word: WordCreate, db: Session = Depends(get_db)):
     if db_word:
         raise HTTPException(status_code=400, detail="Word already exists")
 
-    db_word = Word(word=word.word, definition=word.definition, example=word.example, category=word.category, difficulty=word.difficulty)
+    # db_word = Word(word=word.word, definition=word.definition, example=word.example, category=word.category, difficulty=word.difficulty)
+    db_word = Word(
+        word=word.word,
+        definition=word.definition,
+        phonetic_spelling=word.phonetic_spelling,
+        pronunciation_audio=word.pronunciation_audio,
+        part_of_speech=word.part_of_speech,
+        synonyms=word.synonyms,  # These will be automatically serialized as JSON if needed
+        common_collocations=word.common_collocations,
+        register=word.register,
+        example=word.example,
+        category=word.category,
+        tags=word.tags,  # These will be serialized if needed
+        difficulty=word.difficulty
+    )
+
     db.add(db_word)
     db.commit()
     db.refresh(db_word)

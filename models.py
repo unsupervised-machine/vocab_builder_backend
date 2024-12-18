@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, create_engine, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, create_engine, ForeignKey, DateTime, BLOB, JSON
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, validates
 
 Base = declarative_base()
 
@@ -8,7 +8,7 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'users'
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     password = Column(String)
@@ -17,18 +17,37 @@ class User(Base):
 class Word(Base):
     __tablename__ = 'words'
 
-    id = Column(Integer, primary_key=True, index=True)
-    word = Column(String, index=True)
-    definition = Column(String)
-    example = Column(String)
-    category = Column(String)
-    difficulty = Column(String)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    word = Column(String, index=True, nullable=False)
+    definition = Column(String, nullable=False)
+    phonetic_spelling = Column(String, nullable=True)
+    pronunciation_audio = Column(BLOB, nullable=True)  # Store audio as BLOB
+    part_of_speech = Column(String, nullable=True)
+
+    # Use JSON for lists
+    synonyms = Column(JSON, nullable=True)
+    common_collocations = Column(JSON, nullable=True)
+    register = Column(String, nullable=True)
+    example = Column(String, nullable=True)
+    category = Column(String, nullable=True)
+    tags = Column(JSON, nullable=True)  # Use JSON for lists
+    difficulty = Column(String, default="medium")
+
+    @validates('synonyms', 'common_collocations', 'tags')
+    def convert_list_to_json(self, key, value):
+        """Ensure lists are stored as JSON strings in the database."""
+        if isinstance(value, list):
+            return value
+        return []
+
+    class Config:
+        from_attributes = True  # This tells Pydantic to treat SQLAlchemy models as dictionaries
 
 
 
 class UserWordProgress(Base):
     __tablename__ = 'user_word_progress'
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     word_id = Column(Integer, ForeignKey('words.id'), nullable=False)
 
