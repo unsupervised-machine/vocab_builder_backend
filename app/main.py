@@ -84,7 +84,7 @@ async def get_word(word_id: int, db: Session = Depends(get_db)):
     return word
 
 
-@app.post("/user_word_progress/")
+@app.post("/users/{user_id}/user_word_progress/")
 async def upsert_user_word_progress(usr_wrd_prog: UserWordProgressCreate, db: Session = Depends(get_db)):
     existing_progress = (
         db.query(UserWordProgress)
@@ -119,12 +119,12 @@ async def upsert_user_word_progress(usr_wrd_prog: UserWordProgressCreate, db: Se
     db.refresh(new_progress)
     return {"message": "Progress created", "data": new_progress}
 
-@app.get("/user_word_progress/")
+@app.get("/users/{user_id}/user_word_progress/")
 async def read_user_word_progress(db: Session = Depends(get_db)):
     user_word_progress = db.query(UserWordProgress).all()
     return user_word_progress
 
-@app.get("/user_word_progress/{user_id}{word_id}")
+@app.get("/users/{user_id}/user_word_progress/{word_id}")
 async def get_user_word_progress(user_id: int, word_id: int, db: Session = Depends(get_db)):
     return (
         db.query(UserWordProgress)
@@ -136,7 +136,7 @@ async def get_user_word_progress(user_id: int, word_id: int, db: Session = Depen
     )
 
 
-@app.post("/quiz/")
+@app.post("/quizzes/")
 async def create_quiz_template(quiz_tmplt: QuizCreate, db: Session = Depends(get_db)):
     db_quiz = Quiz(
         word_list=quiz_tmplt.word_list,
@@ -147,18 +147,18 @@ async def create_quiz_template(quiz_tmplt: QuizCreate, db: Session = Depends(get
     db.refresh(db_quiz)
     return {"message": "Quiz template created", "data": db_quiz}
 
-@app.get("/quiz/")
+@app.get("/quizzes/")
 async def read_quiz(db: Session = Depends(get_db)):
     quizzes = db.query(Quiz).all()
     return quizzes
 
-@app.get("/quiz/{quiz_id}")
+@app.get("/quizzes/{quiz_id}")
 async def get_quiz(quiz_id: int, db: Session = Depends(get_db)):
     quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
     return quiz
 
 
-@app.post("/user_quiz/")
+@app.post("/users/{user_id}/user_quizzes/")
 async def create_user_quiz(usr_quiz: UserQuizCreate, db: Session = Depends(get_db)):
     new_usr_quiz = UserQuiz(
         user_id=usr_quiz.user_id,
@@ -174,12 +174,12 @@ async def create_user_quiz(usr_quiz: UserQuizCreate, db: Session = Depends(get_d
     db.refresh(new_usr_quiz)
     return {"message": "User quiz created", "data": new_usr_quiz}
 
-@app.get("/user_quiz/")
+@app.get("/users/{user_id}/user_quizzes/")
 async def read_user_quiz(db: Session = Depends(get_db)):
     user_quiz = db.query(UserQuiz).all()
     return user_quiz
 
-@app.get("/user_quiz/{quiz_id}")
+@app.get("/users/{user_id}/user_quizzes/{quiz_id}")
 async def read_user_quiz(usr_quiz_id: int, db: Session = Depends(get_db)):
     return(
         db.query(UserQuiz)
