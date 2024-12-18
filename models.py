@@ -21,13 +21,14 @@ class Word(Base):
     word = Column(String, index=True, nullable=False)
     definition = Column(String, nullable=False)
     phonetic_spelling = Column(String, nullable=True)
-    pronunciation_audio = Column(BLOB, nullable=True)  # Store audio as BLOB
+    audio_url = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
     part_of_speech = Column(String, nullable=True)
 
     # Use JSON for lists
     synonyms = Column(JSON, nullable=True)
     common_collocations = Column(JSON, nullable=True)
-    register = Column(String, nullable=True)
+    usage_context = Column(String, nullable=True)
     example = Column(String, nullable=True)
     category = Column(String, nullable=True)
     tags = Column(JSON, nullable=True)  # Use JSON for lists

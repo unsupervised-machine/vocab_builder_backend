@@ -20,11 +20,12 @@ class WordBase(BaseModel):
     word: str
     definition: str
     phonetic_spelling: Optional[str] = None
-    pronunciation_audio: Optional[bytes] = None  # Store audio as binary data
+    audio_url: Optional[str] = None  # Store URL to the audio file
+    image_url: Optional[str] = None # Store URL to the image
     part_of_speech: Optional[str] = None
     synonyms: Optional[List[str]] = None
     common_collocations: Optional[List[str]] = None  # Phrases the word is commonly used with (e.g., "serendipitous discovery").
-    register: Optional[str] = None  # Formality or context(e.g., formal, informal, technical).
+    usage_context: Optional[str] = None  # Formality or context(e.g., formal, informal, technical).
     example: Optional[str] = None
     category: Optional[str] = None
     tags: Optional[List[str]] = None
