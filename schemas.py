@@ -40,7 +40,7 @@ class UserWordProgressBase(BaseModel):
     status: Literal['not started', 'active', 'waiting', 'learned']
     review_count: int
     review_spacing: int  # Duration until moving from waiting to active
-    review_last_date: Optional[datetime]  # The last review date (could use int for UNIX timestamp or datetime)
+    review_last_date: Optional[datetime] = datetime.now()  # The last review date (could use int for UNIX timestamp or datetime)
 
     class Config:
         from_attributes = True
@@ -56,7 +56,7 @@ class QuizBase(BaseModel):
     # score_percent: float
 
     # quiz_date: datetime
-    tags: Optional[List[str]]
+    tags: Optional[List[str]] = None
 
     class Config:
         from_attributes = True
@@ -69,7 +69,7 @@ class UserQuizBase(BaseModel):
     incorrect_words: List[int]  # list of word_ids scored incorrect in the quiz
     score_raw: int
     score_percent: float
-    tags: Optional[List[str]]
+    tags: Optional[List[str]] = None
     quiz_date: datetime
 
 
@@ -77,6 +77,16 @@ class UserQuizBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str  # Include password field for user creation
+
+class UserUpdate(BaseModel):
+    # name: Optional[str] = None
+    name: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+    points: Optional[int] = None
+
+    class Config:
+        from_attributes = True
 
 
 class WordCreate(WordBase):

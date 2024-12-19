@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import schemas
 from models import User, Word, UserWordProgress, Quiz, UserQuiz
 from database import get_db
-from schemas import UserCreate, WordCreate, UserWordProgressCreate, QuizCreate, UserQuizCreate
+from schemas import UserCreate, WordCreate, UserWordProgressCreate, QuizCreate, UserQuizCreate, UserUpdate
 
 
 def hash_password(password: str) -> str:
@@ -33,7 +33,7 @@ async def root():
     return {"message": "Hello, World!"}
 
 
-@app.post("/users/")
+@app.post("/users/register")
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
@@ -47,14 +47,45 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return db_user
 
+
+@app.post("/users/{user_id}/update")
+async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.id == user_id).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if email is being updated and ensure it's unique
+    if user_update.email and user_update.email != db_user.email:
+        existing_user = db.query(User).filter(User.email == user_update.email).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+        # Update the fields that are provided
+    if user_update.name is not None:
+        db_user.name = user_update.name
+    if user_update.email is not None:
+        db_user.email = user_update.email
+    if user_update.password is not None:
+        db_user.password = hash_password(user_update.password)
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
 @app.get("/users/")
 async def read_users(db: Session = Depends(get_db)):
     users = db.query(User).all()
     return users
 
-@app.get("/users/{user_id}")
+@app.get("/users/by-id/{user_id}")
 async def get_user(user_id: int, db: Session = Depends(get_db)):
     return db.query(User).filter(User.id == user_id).first()
+
+@app.get("/users/by-email/{email}")
+async def get_user(email: str, db: Session = Depends(get_db)):
+    return db.query(User).filter(User.email == email).first()
 
 
 @app.post("/words/")
@@ -96,10 +127,28 @@ async def get_word(word_id: int, db: Session = Depends(get_db)):
     return word
 
 
-@app.post("/users/{user_id}/user_word_progress/")
-async def upsert_user_word_progress(user_id: int, usr_wrd_prog: UserWordProgressCreate, db: Session = Depends(get_db)):
+@app.post("/users/{user_id}/user_word_progress/{word_id}")
+async def upsert_user_word_progress(
+        user_id: int,
+        word_id: int,
+        usr_wrd_prog: UserWordProgressCreate,
+        db: Session = Depends(get_db)
+):
     if user_id != usr_wrd_prog.user_id:
         raise HTTPException(status_code=400, detail="User ID mismatch")
+
+    if word_id != usr_wrd_prog.word_id:
+        raise HTTPException(status_code=400, detail="Word ID mismatch")
+
+    # Check if user exists
+    user_exists = db.query(User).filter(User.id == user_id).first()
+    if not user_exists:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if word exists
+    word_exists = db.query(Word).filter(Word.id == word_id).first()
+    if not word_exists:
+        raise HTTPException(status_code=404, detail="Word not found")
 
     existing_progress = (
         db.query(UserWordProgress)
