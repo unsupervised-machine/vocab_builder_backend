@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import crud
 from fastapi.middleware.cors import CORSMiddleware
 
+import logging
 
 import schemas
 from models import User, Word, UserWordProgress, Quiz, UserQuiz
@@ -134,11 +135,31 @@ async def upsert_user_word_progress(
         usr_wrd_prog: UserWordProgressCreate,
         db: Session = Depends(get_db)
 ):
-    if user_id != usr_wrd_prog.user_id:
-        raise HTTPException(status_code=400, detail="User ID mismatch")
+    # Log the input data
+    logging.info(f"Received data: {usr_wrd_prog}")
+    logging.info(f"user_id: {user_id}, word_id: {word_id}")
 
-    if word_id != usr_wrd_prog.word_id:
-        raise HTTPException(status_code=400, detail="Word ID mismatch")
+    # If an ID is provided, try to fetch the existing record
+    if usr_wrd_prog.id:
+        existing_progress = (
+            db.query(UserWordProgress)
+            .filter(
+                UserWordProgress.id == usr_wrd_prog.id,
+                UserWordProgress.user_id == usr_wrd_prog.user_id,
+                UserWordProgress.word_id == usr_wrd_prog.word_id,
+            )
+            .first()
+        )
+
+        if existing_progress:
+            # Update the existing record if it matches the provided user_id and word_id
+            existing_progress.status = usr_wrd_prog.status
+            existing_progress.review_count = usr_wrd_prog.review_count
+            existing_progress.review_spacing = usr_wrd_prog.review_spacing
+            existing_progress.review_last_date = usr_wrd_prog.review_last_date
+            db.commit()
+            db.refresh(existing_progress)
+            return {"message": "Progress updated", "data": existing_progress}
 
     # Check if user exists
     user_exists = db.query(User).filter(User.id == user_id).first()
@@ -150,26 +171,7 @@ async def upsert_user_word_progress(
     if not word_exists:
         raise HTTPException(status_code=404, detail="Word not found")
 
-    existing_progress = (
-        db.query(UserWordProgress)
-        .filter(
-            UserWordProgress.user_id == usr_wrd_prog.user_id,
-            UserWordProgress.word_id == usr_wrd_prog.word_id,
-        )
-        .first()
-    )
-
-    if existing_progress:
-        existing_progress.status = usr_wrd_prog.status
-        existing_progress.review_count = usr_wrd_prog.review_count
-        existing_progress.review_spacing = usr_wrd_prog.review_spacing
-        existing_progress.review_last_date = usr_wrd_prog.review_last_date
-        db.commit()
-        db.refresh(existing_progress)
-        return {"message": "Progress updated", "data": existing_progress}
-
-
-    # Create a new record if none exists
+    # If no existing record is found, create a new one
     new_progress = UserWordProgress(
         user_id=usr_wrd_prog.user_id,
         word_id=usr_wrd_prog.word_id,

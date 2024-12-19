@@ -1,5 +1,3 @@
-from xmlrpc.client import DateTime
-
 from pydantic import BaseModel
 from typing import List, Optional, Literal
 from datetime import datetime
@@ -35,6 +33,7 @@ class WordBase(BaseModel):
 
 
 class UserWordProgressBase(BaseModel):
+    id: Optional[int] = None  # Optional ID, will be passed only if updating an existing entry
     user_id: int
     word_id: int
     status: Literal['not started', 'active', 'waiting', 'learned']
