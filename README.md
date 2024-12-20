@@ -8,5 +8,5 @@
 - TODO
 
 ## Commands
-### Start Front End App
+### Start Backend App
 - uvicorn app.main:app --reload
