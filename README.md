@@ -9,4 +9,4 @@
 
 ## Commands
 ### Start Front End App
-- npm 
+- uvicorn app.main:app --reload
