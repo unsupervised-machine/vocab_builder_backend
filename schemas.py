@@ -72,6 +72,15 @@ class UserQuizBase(BaseModel):
     quiz_date: datetime
 
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+# Response model
+class LoginResponse(BaseModel):
+    user_id: int
+
+
 # Create schemas for POST requests (for creating new entries)
 
 class UserCreate(UserBase):

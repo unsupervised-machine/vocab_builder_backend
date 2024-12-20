@@ -9,13 +9,18 @@ import logging
 import schemas
 from models import User, Word, UserWordProgress, Quiz, UserQuiz
 from database import get_db
-from schemas import UserCreate, WordCreate, UserWordProgressCreate, QuizCreate, UserQuizCreate, UserUpdate
+from schemas import UserCreate, WordCreate, UserWordProgressCreate, QuizCreate, UserQuizCreate, UserUpdate, LoginRequest
 
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
     return hashed_password.decode('utf-8')
+
+
+def verify_password(input_password: str, hashed_password: str) -> bool:
+    input_password_bytes = input_password.encode('utf-8')
+    return bcrypt.checkpw(input_password_bytes, hashed_password.encode('utf-8'))
 
 app = FastAPI()
 
@@ -32,6 +37,28 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": "Hello, World!"}
+
+
+@app.post("/login/")
+async def login(login_credentials: LoginRequest, db: Session = Depends(get_db)):
+    # Log received email and password
+    print(f"Received email: {login_credentials.email}, password: {login_credentials.password}")
+
+    db_user = (db.query(User)
+        .filter(
+    User.email == login_credentials.email,
+        )
+        .first()
+        )
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not verify_password(login_credentials.password, db_user.password):
+        print("Invalid password")
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    # Successfully authenticated, return user ID
+    return {"id": db_user.id}
 
 
 @app.post("/users/register")
