@@ -42,7 +42,7 @@ async def root():
 @app.post("/login/")
 async def login(login_credentials: LoginRequest, db: Session = Depends(get_db)):
     # Log received email and password
-    print(f"Received email: {login_credentials.email}, password: {login_credentials.password}")
+    print(f"login received, email: {login_credentials.email}, password: {login_credentials.password}")
 
     db_user = (db.query(User)
         .filter(
@@ -58,6 +58,7 @@ async def login(login_credentials: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid password")
 
     # Successfully authenticated, return user ID
+    print(f"login successful, user_id: {db_user.id}")
     return {"id": db_user.id}
 
 
