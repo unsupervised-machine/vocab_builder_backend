@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Float , String, create_engine, ForeignKey, DateTime, BLOB, JSON
+from sqlalchemy import Column, Integer, Float, String, create_engine, ForeignKey, DateTime, BLOB, JSON, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, validates
 
@@ -57,6 +57,9 @@ class UserWordProgress(Base):
     review_count = Column(Integer, default=0)  # number of times reviewed
     review_spacing = Column(Integer, default=0)  # duration to wait (in days)
     review_last_date = Column(DateTime, nullable=True)  # datetime of the last review
+
+    __table_args__ = (UniqueConstraint('user_id', 'word_id', name='_user_word_uc'),)
+
 
 
 class Quiz(Base):

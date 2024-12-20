@@ -62,7 +62,7 @@ async def login(login_credentials: LoginRequest, db: Session = Depends(get_db)):
     return {"id": db_user.id}
 
 
-@app.post("/users/register")
+@app.post("/register")
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
@@ -163,31 +163,25 @@ async def upsert_user_word_progress(
         usr_wrd_prog: UserWordProgressCreate,
         db: Session = Depends(get_db)
 ):
-    # Log the input data
-    logging.info(f"Received data: {usr_wrd_prog}")
-    logging.info(f"user_id: {user_id}, word_id: {word_id}")
-
-    # If an ID is provided, try to fetch the existing record
-    if usr_wrd_prog.id:
-        existing_progress = (
-            db.query(UserWordProgress)
-            .filter(
-                UserWordProgress.id == usr_wrd_prog.id,
-                UserWordProgress.user_id == usr_wrd_prog.user_id,
-                UserWordProgress.word_id == usr_wrd_prog.word_id,
-            )
-            .first()
+    # Check if an existing record already exists for the given user_id and word_id
+    existing_progress = (
+        db.query(UserWordProgress)
+        .filter(
+            UserWordProgress.user_id == user_id,
+            UserWordProgress.word_id == word_id
         )
+        .first()
+    )
 
-        if existing_progress:
-            # Update the existing record if it matches the provided user_id and word_id
-            existing_progress.status = usr_wrd_prog.status
-            existing_progress.review_count = usr_wrd_prog.review_count
-            existing_progress.review_spacing = usr_wrd_prog.review_spacing
-            existing_progress.review_last_date = usr_wrd_prog.review_last_date
-            db.commit()
-            db.refresh(existing_progress)
-            return {"message": "Progress updated", "data": existing_progress}
+    if existing_progress:
+        # Update the existing record
+        existing_progress.status = usr_wrd_prog.status
+        existing_progress.review_count = usr_wrd_prog.review_count
+        existing_progress.review_spacing = usr_wrd_prog.review_spacing
+        existing_progress.review_last_date = usr_wrd_prog.review_last_date
+        db.commit()
+        db.refresh(existing_progress)
+        return {"message": "Progress updated", "data": existing_progress}
 
     # Check if user exists
     user_exists = db.query(User).filter(User.id == user_id).first()
@@ -201,8 +195,8 @@ async def upsert_user_word_progress(
 
     # If no existing record is found, create a new one
     new_progress = UserWordProgress(
-        user_id=usr_wrd_prog.user_id,
-        word_id=usr_wrd_prog.word_id,
+        user_id=user_id,
+        word_id=word_id,
         status=usr_wrd_prog.status,
         review_count=usr_wrd_prog.review_count,
         review_spacing=usr_wrd_prog.review_spacing,
@@ -212,6 +206,7 @@ async def upsert_user_word_progress(
     db.commit()
     db.refresh(new_progress)
     return {"message": "Progress created", "data": new_progress}
+
 
 @app.get("/users/{user_id}/user_word_progress/")
 async def read_user_word_progress(user_id: int, db: Session = Depends(get_db)):
