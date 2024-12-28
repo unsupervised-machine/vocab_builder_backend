@@ -102,7 +102,10 @@ class WordCreate(WordBase):
 
 
 class UserWordProgressCreate(UserWordProgressBase):
-    pass  # can add more fields later
+    status: Literal['not started', 'active', 'waiting', 'learned'] = 'not started'
+    review_count: int = 0
+    review_spacing: int = 0
+    review_last_date: Optional[datetime] = datetime.now()
 
 
 class QuizCreate(QuizBase):

@@ -9,7 +9,8 @@ import logging
 import schemas
 from models import User, Word, UserWordProgress, Quiz, UserQuiz
 from database import get_db
-from schemas import UserCreate, WordCreate, UserWordProgressCreate, QuizCreate, UserQuizCreate, UserUpdate, LoginRequest
+from schemas import UserCreate, WordCreate, UserWordProgressCreate, QuizCreate, UserQuizCreate, UserUpdate, \
+    LoginRequest, UserWordProgressBase
 
 
 def hash_password(password: str) -> str:
@@ -97,6 +98,8 @@ async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depen
         db_user.email = user_update.email
     if user_update.password is not None:
         db_user.password = hash_password(user_update.password)
+    if user_update.points is not None:
+        db_user.points = user_update.points
 
     db.commit()
     db.refresh(db_user)
@@ -160,7 +163,7 @@ async def get_word(word_id: int, db: Session = Depends(get_db)):
 async def upsert_user_word_progress(
         user_id: int,
         word_id: int,
-        usr_wrd_prog: UserWordProgressCreate,
+        usr_wrd_prog: UserWordProgressBase,
         db: Session = Depends(get_db)
 ):
     # Check if an existing record already exists for the given user_id and word_id
@@ -283,3 +286,18 @@ async def read_user_quiz(user_id: int, user_quiz_id: int, db: Session = Depends(
             raise HTTPException(status_code=404, detail="User quiz not found")
 
         return result
+
+
+@app.post("/users/{user_id}/add_points/")
+async def add_points(user_id: int, points: int, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.id == user_id).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    new_points = db_user.points + points
+    db_user.points = new_points
+
+    db.commit()
+    db.refresh(db_user)
+    return {"message": "Points added", "user_id": user_id, "old_points": db_user.points, "new_points": new_points }
